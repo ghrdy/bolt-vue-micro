@@ -1,72 +1,73 @@
-import { defineStore } from 'pinia'
-import api from '../config/api'
+import { defineStore } from "pinia";
+import api from "../config/api";
 
-export const useCartStore = defineStore('cart', {
+export const useCartStore = defineStore("cart", {
   state: () => ({
     items: [],
-    loading: false
+    loading: false,
   }),
 
   getters: {
     itemCount: (state) => state.items.length,
-    total: (state) => state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    total: (state) =>
+      state.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
   },
 
   actions: {
     async addToCart(product) {
       try {
-        const response = await api.post('/cart/add', {
-          user_id: localStorage.getItem('userId'),
+        const response = await api.post("api/cart/add", {
+          user_id: localStorage.getItem("userId"),
           product_id: product._id,
-          quantity: 1
-        })
-        await this.fetchCart()
-        return response
+          quantity: 1,
+        });
+        await this.fetchCart();
+        return response;
       } catch (error) {
-        throw error
+        throw error;
       }
     },
 
     async fetchCart() {
       try {
-        const userId = localStorage.getItem('userId')
-        if (!userId) return
-        
-        this.loading = true
-        const response = await api.get(`/cart/user/${userId}`)
-        this.items = response.data.cart.items
+        const userId = localStorage.getItem("userId");
+        if (!userId) return;
+
+        this.loading = true;
+        const response = await api.get(`api/cart/user/${userId}`);
+        this.items = response.data.cart.items;
       } catch (error) {
-        console.error('Error fetching cart:', error)
+        console.error("Error fetching cart:", error);
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
 
     async updateQuantity(productId, quantity) {
       try {
-        await api.put('/cart/update', {
-          user_id: localStorage.getItem('userId'),
+        await api.put("/cart/update", {
+          user_id: localStorage.getItem("userId"),
           product_id: productId,
-          quantity
-        })
-        await this.fetchCart()
+          quantity,
+        });
+        await this.fetchCart();
       } catch (error) {
-        throw error
+        throw error;
       }
     },
 
     async removeFromCart(productId) {
       try {
-        await api.delete('/cart/remove', {
+        await api.delete("/cart/remove", {
           data: {
-            user_id: localStorage.getItem('userId'),
-            product_id: productId
-          }
-        })
-        await this.fetchCart()
+            user_id: localStorage.getItem("userId"),
+            product_id: productId,
+          },
+        });
+        await this.fetchCart();
       } catch (error) {
-        throw error
+        throw error;
       }
-    }
-  }
-})
+    },
+  },
+});

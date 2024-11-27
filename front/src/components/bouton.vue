@@ -79,17 +79,21 @@
 
 .image-container {
   width: 100%;
-  height: 200px;
+  height: 250px;
   overflow: hidden;
   border-radius: 10px;
   margin: 1rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .image-container img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
+  padding: 1rem;
 }
 
 .btn-login1 {
@@ -150,7 +154,11 @@
   }
 
   .image-container {
-    height: 150px;
+    height: 200px;
+  }
+
+  .image-container img {
+    padding: 0.5rem;
   }
 }
 </style>
