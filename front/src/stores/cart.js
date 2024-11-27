@@ -5,6 +5,7 @@ export const useCartStore = defineStore("cart", {
   state: () => ({
     items: [],
     loading: false,
+    error: null
   }),
 
   getters: {
@@ -16,28 +17,46 @@ export const useCartStore = defineStore("cart", {
   actions: {
     async addToCart(product) {
       try {
-        const response = await api.post("api/cart/add", {
+        this.loading = true;
+        const response = await api.post("/api/cart/add", {
           user_id: localStorage.getItem("userId"),
           product_id: product._id,
           quantity: 1,
         });
-        await this.fetchCart();
-        return response;
+        
+        if (response.data.success) {
+          await this.fetchCart();
+          return response;
+        } else {
+          throw new Error(response.data.message);
+        }
       } catch (error) {
+        this.error = error.message || 'Error adding item to cart';
         throw error;
+      } finally {
+        this.loading = false;
       }
     },
 
     async fetchCart() {
       try {
-        const userId = localStorage.getItem("userId");
-        if (!userId) return;
-
         this.loading = true;
-        const response = await api.get(`api/cart/user/${userId}`);
-        this.items = response.data.cart.items;
+        const userId = localStorage.getItem("userId");
+        if (!userId) {
+          this.items = [];
+          return;
+        }
+
+        const response = await api.get(`/api/cart/user/${userId}`);
+        if (response.data.success && response.data.cart) {
+          this.items = response.data.cart.items || [];
+        } else {
+          this.items = [];
+        }
       } catch (error) {
+        this.error = error.message || 'Error fetching cart';
         console.error("Error fetching cart:", error);
+        this.items = [];
       } finally {
         this.loading = false;
       }
@@ -45,29 +64,51 @@ export const useCartStore = defineStore("cart", {
 
     async updateQuantity(productId, quantity) {
       try {
-        await api.put("/cart/update", {
+        this.loading = true;
+        const response = await api.put("/api/cart/update", {
           user_id: localStorage.getItem("userId"),
           product_id: productId,
           quantity,
         });
-        await this.fetchCart();
+        
+        if (response.data.success) {
+          await this.fetchCart();
+        } else {
+          throw new Error(response.data.message);
+        }
       } catch (error) {
+        this.error = error.message || 'Error updating quantity';
         throw error;
+      } finally {
+        this.loading = false;
       }
     },
 
     async removeFromCart(productId) {
       try {
-        await api.delete("/cart/remove", {
+        this.loading = true;
+        const response = await api.delete("/api/cart/remove", {
           data: {
             user_id: localStorage.getItem("userId"),
             product_id: productId,
           },
         });
-        await this.fetchCart();
+        
+        if (response.data.success) {
+          await this.fetchCart();
+        } else {
+          throw new Error(response.data.message);
+        }
       } catch (error) {
+        this.error = error.message || 'Error removing item from cart';
         throw error;
+      } finally {
+        this.loading = false;
       }
     },
+
+    clearError() {
+      this.error = null;
+    }
   },
 });

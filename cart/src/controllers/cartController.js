@@ -29,9 +29,9 @@ exports.addItemToCart = async (req, res) => {
 
         // Sauvegarder le panier mis à jour ou nouvellement créé dans la base de données
         await cart.save();
-        res.status(200).json({ success: true, message: 'Produit ajouté au panier', cart });
+        res.status(200).json({ success: true, message: 'Produit ajouté au panier', cart: cart });
     } catch (error) {
-        res.status(500).json({ message: 'Erreur serveur', error });
+        res.status(500).json({ success: false, message: 'Erreur serveur', error });
     }
 };
 
@@ -40,15 +40,15 @@ exports.removeItemFromCart = async (req, res) => {
     const { user_id, product_id } = req.body;
     try {
         let cart = await Cart.findOne({ user_id });
-        if (!cart) return res.status(404).json({ message: 'Panier non trouvé' });
+        if (!cart) return res.status(404).json({ success: false, message: 'Panier non trouvé' });
 
         // Filtrer pour supprimer l'élément
         cart.items = cart.items.filter(item => item.product_id !== product_id);
 
         await cart.save();
-        res.status(200).json({ success: true, message: 'Produit supprimé du panier' });
+        res.status(200).json({ success: true, message: 'Produit supprimé du panier', cart: cart });
     } catch (error) {
-        res.status(500).json({ message: 'Erreur serveur', error });
+        res.status(500).json({ success: false, message: 'Erreur serveur', error });
     }
 };
 
@@ -57,14 +57,14 @@ exports.clearCart = async (req, res) => {
     const { user_id } = req.params;
     try {
         let cart = await Cart.findOne({ user_id });
-        if (!cart) return res.status(404).json({ message: 'Panier non trouvé' });
+        if (!cart) return res.status(404).json({ success: false, message: 'Panier non trouvé' });
 
         // Vider les items du panier
         cart.items = [];
         await cart.save();
-        res.status(200).json({ success: true, message: 'Panier vidé' });
+        res.status(200).json({ success: true, message: 'Panier vidé', cart: cart });
     } catch (error) {
-        res.status(500).json({ message: 'Erreur serveur', error });
+        res.status(500).json({ success: false, message: 'Erreur serveur', error });
     }
 };
 
@@ -74,19 +74,19 @@ exports.updateItemQuantity = async (req, res) => {
 
     try {
         let cart = await Cart.findOne({ user_id });
-        if (!cart) return res.status(404).json({ message: 'Panier non trouvé' });
+        if (!cart) return res.status(404).json({ success: false, message: 'Panier non trouvé' });
 
         // Trouver l'élément dans le panier et mettre à jour la quantité
         const itemIndex = cart.items.findIndex(item => item.product_id === product_id);
         if (itemIndex > -1) {
             cart.items[itemIndex].quantity = quantity;
             await cart.save();
-            res.status(200).json({ success: true, message: 'Quantité mise à jour', cart });
+            res.status(200).json({ success: true, message: 'Quantité mise à jour', cart: cart });
         } else {
             res.status(404).json({ success: false, message: 'Produit non trouvé dans le panier' });
         }
     } catch (error) {
-        res.status(500).json({ message: 'Erreur serveur', error });
+        res.status(500).json({ success: false, message: 'Erreur serveur', error });
     }
 };
 
@@ -95,11 +95,18 @@ exports.getCart = async (req, res) => {
     const { user_id } = req.params;
     try {
         let cart = await Cart.findOne({ user_id });
-        if (!cart) return res.status(404).json({ message: 'Panier non trouvé'+user_id });
+        if (!cart) {
+            // Si le panier n'existe pas, créer un nouveau panier vide
+            cart = new Cart({
+                user_id,
+                items: []
+            });
+            await cart.save();
+        }
 
-        res.status(200).json({ success: true, cart });
+        res.status(200).json({ success: true, cart: cart });
     } catch (error) {
-        res.status(500).json({ message: 'Erreur serveur', error });
+        res.status(500).json({ success: false, message: 'Erreur serveur', error });
     }
 };
 
@@ -107,10 +114,8 @@ exports.getCart = async (req, res) => {
 exports.getAllCarts = async (req, res) => {
     try {
         const carts = await Cart.find();
-        console.log(carts);
-
-        res.status(200).json({ success: true, carts });
+        res.status(200).json({ success: true, carts: carts });
     } catch (error) {
-        res.status(500).json({ message: 'Erreur serveur', error });
+        res.status(500).json({ success: false, message: 'Erreur serveur', error });
     }
 };
