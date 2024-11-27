@@ -17,7 +17,7 @@ app.use(express.json());
 
 // Routes
 app.use("/", cartRoutes);
-app.use("/checkout", checkoutRoutes);
+app.use("/", checkoutRoutes);
 // Démarrer le serveur
 const PORT = process.env.PORT || 3003;
 app.listen(PORT, () => {

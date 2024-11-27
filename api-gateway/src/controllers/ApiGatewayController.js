@@ -35,3 +35,7 @@ export const handleOrdersRequest = (req, res) => {
 export const handleProductsRequest = (req, res) => {
   proxyRequest(req, res, "http://products-service:3002");
 };
+
+export const handleCheckoutRequest = (req, res) => {
+  proxyRequest(req, res, "http://cart_service:3003");
+};
