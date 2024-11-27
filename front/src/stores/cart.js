@@ -10,8 +10,13 @@ export const useCartStore = defineStore("cart", {
 
   getters: {
     itemCount: (state) => state.items.length,
-    total: (state) =>
-      state.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    total: (state) => {
+      return state.items.reduce((sum, item) => {
+        const price = Number(item.price) || 0;
+        const quantity = Number(item.quantity) || 0;
+        return sum + (price * quantity);
+      }, 0);
+    },
   },
 
   actions: {
@@ -21,6 +26,9 @@ export const useCartStore = defineStore("cart", {
           user_id: localStorage.getItem("userId"),
           product_id: product._id,
           quantity: 1,
+          price: product.price,
+          name: product.name,
+          image: product.image
         });
         await this.fetchCart();
         return response;
@@ -39,7 +47,13 @@ export const useCartStore = defineStore("cart", {
 
         this.loading = true;
         const response = await api.get(`/cart/user/${userId}`);
-        this.items = response.data.cart.items;
+        if (response.data && response.data.cart) {
+          this.items = response.data.cart.items.map(item => ({
+            ...item,
+            price: Number(item.price) || 0,
+            quantity: Number(item.quantity) || 0
+          }));
+        }
       } catch (error) {
         console.error("Error fetching cart:", error);
         this.items = [];
