@@ -132,6 +132,14 @@ services:
     networks:
       - app-network
       
+  front_service:
+    build:
+      context: ./front
+      dockerfile: Docker/Dockerfile
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
 
 volumes:
   user-db-data:
