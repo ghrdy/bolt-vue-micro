@@ -29,12 +29,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Toast Messages -->
-    <div v-if="showToast" 
-         class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg">
-      {{ toastMessage }}
-    </div>
   </div>
 </template>
 
@@ -49,16 +43,6 @@ const cartStore = useCartStore()
 const products = ref([])
 const loading = ref(false)
 const error = ref(null)
-const showToast = ref(false)
-const toastMessage = ref('')
-
-const showToastMessage = (message) => {
-  toastMessage.value = message
-  showToast.value = true
-  setTimeout(() => {
-    showToast.value = false
-  }, 3000)
-}
 
 const fetchProducts = async () => {
   try {
@@ -76,10 +60,8 @@ const fetchProducts = async () => {
 const addToCart = async (product) => {
   try {
     await cartStore.addToCart(product)
-    showToastMessage('Product added to cart')
     toast.success('Product added to cart')
   } catch (err) {
-    showToastMessage('Failed to add product to cart')
     toast.error('Failed to add product to cart')
   }
 }

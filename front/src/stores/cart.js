@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import api from "../config/api";
+import { useAuthStore } from './auth';
 
 export const useCartStore = defineStore("cart", {
   state: () => ({
@@ -31,13 +32,17 @@ export const useCartStore = defineStore("cart", {
     async fetchCart() {
       try {
         const userId = localStorage.getItem("userId");
-        if (!userId) return;
+        if (!userId) {
+          this.items = [];
+          return;
+        }
 
         this.loading = true;
         const response = await api.get(`/cart/user/${userId}`);
         this.items = response.data.cart.items;
       } catch (error) {
         console.error("Error fetching cart:", error);
+        this.items = [];
       } finally {
         this.loading = false;
       }
@@ -69,5 +74,9 @@ export const useCartStore = defineStore("cart", {
         throw error;
       }
     },
+
+    clearCart() {
+      this.items = [];
+    }
   },
 });
