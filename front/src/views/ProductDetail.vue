@@ -40,26 +40,31 @@
       </div>
 
       <!-- Recommendations -->
-      <div>
-        <h2 class="text-2xl font-bold text-gray-900 mb-6">Produits recommandés</h2>
+      <div v-if="recommendations.length > 0">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">Produits similaires</h2>
         <div class="space-y-6">
-          <div v-for="rec in recommendations" :key="rec._id" class="flex items-center space-x-4 bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow">
+          <div v-for="rec in recommendations" :key="rec._id" 
+               class="flex items-center space-x-4 bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer"
+               @click="navigateToProduct(rec._id)">
             <img :src="rec.image" :alt="rec.name" class="w-24 h-24 object-cover rounded"/>
-            <div>
+            <div class="flex-1">
               <h3 class="font-semibold text-lg">{{ rec.name }}</h3>
               <p class="text-gray-600 text-sm line-clamp-2">{{ rec.description }}</p>
               <div class="mt-2 flex items-center justify-between">
                 <span class="font-bold">${{ rec.price }}</span>
                 <button 
-                  @click="navigateToProduct(rec._id)"
-                  class="text-blue-600 hover:text-blue-800"
+                  @click.stop="addToCartRecommendation(rec)"
+                  class="text-blue-600 hover:text-blue-800 font-medium"
                 >
-                  Voir détails
+                  Ajouter au panier
                 </button>
               </div>
             </div>
           </div>
         </div>
+      </div>
+      <div v-else class="text-center text-gray-600">
+        Aucune recommandation disponible pour ce produit
       </div>
     </div>
   </div>
@@ -87,7 +92,13 @@ const fetchProduct = async () => {
     loading.value = true
     const response = await axios.get(`http://localhost:3005/products/liste/${route.params.id}`)
     product.value = response.data.product
-    recommendations.value = response.data.recommendations
+
+    // Filter recommendations to exclude same category products
+    if (response.data.recommendations) {
+      recommendations.value = response.data.recommendations.filter(
+        rec => rec.categorie !== product.value.categorie
+      )
+    }
   } catch (err) {
     error.value = 'Erreur lors du chargement du produit'
     toast.error('Erreur lors du chargement du produit')
@@ -105,7 +116,17 @@ const addToCart = async () => {
   }
 }
 
+const addToCartRecommendation = async (rec) => {
+  try {
+    await cartStore.addToCart(rec)
+    toast.success('Produit ajouté au panier')
+  } catch (err) {
+    toast.error('Erreur lors de l\'ajout au panier')
+  }
+}
+
 const navigateToProduct = (productId) => {
+  if (productId === route.params.id) return
   router.push(`/product/${productId}`)
 }
 

@@ -12,7 +12,8 @@
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div v-for="product in products" :key="product._id" 
-           class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+           class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+           @click="navigateToProduct(product._id)">
         <img :src="product.image" :alt="product.name" class="w-full h-48 object-cover"/>
         <div class="p-4">
           <h2 class="text-xl font-semibold mb-2">{{ product.name }}</h2>
@@ -27,12 +28,12 @@
             <span class="text-lg font-bold">${{ product.price }}</span>
             <div class="space-x-2">
               <button 
-                @click="navigateToProduct(product._id)"
+                @click.stop="navigateToProduct(product._id)"
                 class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
                 Voir détails
               </button>
               <button 
-                @click="addToCart(product)"
+                @click.stop="addToCart(product)"
                 :disabled="cartStore.loading"
                 class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors disabled:opacity-50">
                 {{ cartStore.loading ? 'Ajout...' : 'Ajouter' }}
