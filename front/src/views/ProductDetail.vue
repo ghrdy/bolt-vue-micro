@@ -41,7 +41,7 @@
 
       <!-- Recommendations -->
       <div v-if="recommendations.length > 0">
-        <h2 class="text-2xl font-bold text-gray-900 mb-6">Produits similaires</h2>
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">Produits recommandés</h2>
         <div class="space-y-6">
           <div v-for="rec in recommendations" :key="rec._id" 
                class="flex items-center space-x-4 bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer"
