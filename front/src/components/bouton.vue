@@ -5,24 +5,24 @@
   <section class="container">
     <div class="principal">
       <div class="annonce-right slide-fade-in">
-        <h1 class="text">Carte Graphique</h1>
-        <router-link to="/products" class="btn-login1">Learn More -></router-link>
+        <h1 class="text">Graphics Cards</h1>
+        <router-link to="/category/graphic-card" class="btn-login1">Learn More -></router-link>
         <div class="image-container">
-          <img src="../assets/p3.jpeg" alt="Carte graphique"/>
+          <img src="../assets/p3.jpeg" alt="Graphics card"/>
         </div>
       </div>
       <div class="annonce-left slide-fade-in">
         <div class="image-container">
-          <img src="../assets/p5.jpeg" alt="Processeur"/>
+          <img src="../assets/p5.jpeg" alt="Processor"/>
         </div>
-        <h1 class="text">Processeur</h1>
-        <router-link to="/products" class="btn-login1">Learn More -></router-link>
+        <h1 class="text">Processors</h1>
+        <router-link to="/category/processor" class="btn-login1">Learn More -></router-link>
       </div>
       <div class="annonce-right uno slide-fade-in">
-        <h1 class="text">Tour Ordi</h1>
-        <router-link to="/products" class="btn-login1">Learn More -></router-link>
+        <h1 class="text">Pre-built PCs</h1>
+        <router-link to="/category/prebuild" class="btn-login1">Learn More -></router-link>
         <div class="image-container">
-          <img src="../assets/p4.jpeg" alt="Tour PC"/>
+          <img src="../assets/p4.jpeg" alt="Pre-built PC"/>
         </div>
       </div>
     </div>

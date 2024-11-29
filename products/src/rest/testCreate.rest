@@ -1,4 +1,4 @@
-###
+### CPU 1
 POST http://localhost:3002/products/create
 Content-Type: application/json
 
@@ -13,7 +13,7 @@ Content-Type: application/json
   "tags": ["AMD", "AM4", "6-core", "gaming", "budget", "PCIe 4.0"],
   "performance_score": 65
 }
-###
+### CPU 2
 POST http://localhost:3002/products/create
 Content-Type: application/json
 
@@ -28,7 +28,7 @@ Content-Type: application/json
   "tags": ["Intel", "LGA 1700", "hybrid-core", "gaming", "mid-range", "PCIe 5.0", "overclocking"],
   "performance_score": 85
 }
-###
+### CPU 3
 POST http://localhost:3002/products/create
 Content-Type: application/json
 
@@ -44,7 +44,7 @@ Content-Type: application/json
   "performance_score": 98
 }
 
-###
+### CARTES GRAPHIQUES
 POST http://localhost:3002/products/create
 Content-Type: application/json
 
