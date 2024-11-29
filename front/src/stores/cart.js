@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 import api from "../config/api";
 import { useAuthStore } from './auth';
+import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toastification';
 
 export const useCartStore = defineStore("cart", {
   state: () => ({
@@ -21,6 +23,16 @@ export const useCartStore = defineStore("cart", {
 
   actions: {
     async addToCart(product) {
+      const authStore = useAuthStore();
+      const router = useRouter();
+      const toast = useToast();
+
+      if (!authStore.isAuthenticated) {
+        toast.info('Please login to add items to cart');
+        router.push('/login');
+        return;
+      }
+
       try {
         const response = await api.post("/cart/add", {
           user_id: localStorage.getItem("userId"),

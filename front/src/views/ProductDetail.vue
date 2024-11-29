@@ -31,22 +31,22 @@
           </div>
           <button 
             @click="addToCart"
-            :disabled="!product.disponibilite"
+            :disabled="!product.disponibilite || cartStore.loading"
             class="mt-6 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Ajouter au panier
+            {{ cartStore.loading ? 'Ajout en cours...' : 'Ajouter au panier' }}
           </button>
         </div>
       </div>
 
       <!-- Recommendations -->
-      <div v-if="recommendations.length > 0">
+      <div v-if="recommendations.length > 0" class="space-y-6">
         <h2 class="text-2xl font-bold text-gray-900 mb-6">Produits recommandés</h2>
-        <div class="space-y-6">
+        <div class="grid gap-6">
           <div v-for="rec in recommendations" :key="rec._id" 
-               class="flex items-center space-x-4 bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer"
+               class="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer"
                @click="navigateToProduct(rec._id)">
-            <img :src="rec.image" :alt="rec.name" class="w-24 h-24 object-cover rounded"/>
+            <img :src="rec.image" :alt="rec.name" class="w-full sm:w-24 h-24 object-cover rounded"/>
             <div class="flex-1">
               <h3 class="font-semibold text-lg">{{ rec.name }}</h3>
               <p class="text-gray-600 text-sm line-clamp-2">{{ rec.description }}</p>
@@ -54,9 +54,10 @@
                 <span class="font-bold">${{ rec.price }}</span>
                 <button 
                   @click.stop="addToCartRecommendation(rec)"
+                  :disabled="cartStore.loading"
                   class="text-blue-600 hover:text-blue-800 font-medium"
                 >
-                  Ajouter au panier
+                  {{ cartStore.loading ? 'Ajout...' : 'Ajouter au panier' }}
                 </button>
               </div>
             </div>
@@ -75,12 +76,14 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useCartStore } from '../stores/cart'
+import { useAuthStore } from '../stores/auth'
 import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const cartStore = useCartStore()
+const authStore = useAuthStore()
 
 const product = ref(null)
 const recommendations = ref([])
@@ -93,7 +96,6 @@ const fetchProduct = async () => {
     const response = await axios.get(`http://localhost:3005/products/liste/${route.params.id}`)
     product.value = response.data.product
 
-    // Filter recommendations to exclude same category products
     if (response.data.recommendations) {
       recommendations.value = response.data.recommendations.filter(
         rec => rec.categorie !== product.value.categorie
@@ -108,6 +110,12 @@ const fetchProduct = async () => {
 }
 
 const addToCart = async () => {
+  if (!authStore.isAuthenticated) {
+    toast.info('Veuillez vous connecter pour ajouter des produits au panier')
+    router.push('/login')
+    return
+  }
+
   try {
     await cartStore.addToCart(product.value)
     toast.success('Produit ajouté au panier')
@@ -117,6 +125,12 @@ const addToCart = async () => {
 }
 
 const addToCartRecommendation = async (rec) => {
+  if (!authStore.isAuthenticated) {
+    toast.info('Veuillez vous connecter pour ajouter des produits au panier')
+    router.push('/login')
+    return
+  }
+
   try {
     await cartStore.addToCart(rec)
     toast.success('Produit ajouté au panier')
