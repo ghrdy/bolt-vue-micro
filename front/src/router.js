@@ -19,6 +19,10 @@ const routes = [
     component: () => import('./views/Products.vue')
   },
   {
+    path: '/product/:id',
+    component: () => import('./views/ProductDetail.vue')
+  },
+  {
     path: '/cart',
     component: () => import('./views/Cart.vue'),
     meta: { requiresAuth: true }
