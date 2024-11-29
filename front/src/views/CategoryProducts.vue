@@ -32,7 +32,7 @@
             </span>
           </div>
           <div class="flex justify-between items-center">
-            <span class="text-lg font-bold">${{ product.price }}</span>
+            <span class="text-lg font-bold">${{ formatPrice(product.price) }}</span>
             <div class="space-x-2">
               <button 
                 @click.stop="navigateToProduct(product._id)"
@@ -54,11 +54,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useCartStore } from '../stores/cart'
-import axios from 'axios'
+import api from '../config/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -74,14 +74,20 @@ const categoryTitle = computed(() => {
   return category.charAt(0).toUpperCase() + category.slice(1).replace('-', ' ')
 })
 
+const formatPrice = (price) => {
+  return Number(price).toFixed(2)
+}
+
 const fetchProducts = async () => {
   try {
     loading.value = true
-    const response = await axios.get('http://localhost:3005/products/liste')
-    products.value = response.data.filter(
-      product => product.categorie.toLowerCase() === route.params.category.toLowerCase()
-    )
+    const response = await api.get('/products/liste')
+    products.value = response.data.filter(product => {
+      const normalizedCategory = product.categorie.toLowerCase().replace(/\s+/g, '-')
+      return normalizedCategory === route.params.category.toLowerCase()
+    })
   } catch (err) {
+    console.error('Error fetching products:', err)
     error.value = 'Error loading products'
     toast.error('Error loading products')
   } finally {
@@ -101,6 +107,10 @@ const addToCart = async (product) => {
 const navigateToProduct = (productId) => {
   router.push(`/product/${productId}`)
 }
+
+watch(() => route.params.category, () => {
+  fetchProducts()
+})
 
 onMounted(fetchProducts)
 </script>
