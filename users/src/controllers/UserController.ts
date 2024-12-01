@@ -1,44 +1,9 @@
 import { Request, Response } from "express";
 import User from "../models/UserModel";
-import { hashPassword } from "../services/UserService";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
+import { hashPassword, comparePassword } from "../services/UserService";
+import { generateTokens, generateCookieOptions, verifyRefreshToken } from "../services/TokenService";
+import jwt from 'jsonwebtoken';
 
-// Login Controller
-/**
- * @swagger
- * /login:
- *   post:
- *     summary: Authentification d'un utilisateur
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               email:
- *                 type: string
- *               password:
- *                 type: string
- *     responses:
- *       200:
- *         description: Succès
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
- *                 userId:
- *                   type: string
- *       400:
- *         description: Email ou mot de passe incorrect
- *       500:
- *         description: Erreur interne du serveur
- */
 const login = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
 
@@ -48,144 +13,113 @@ const login = async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ msg: "Email ou mot de passe incorrect." });
       return;
     }
-    const isMatch = await bcrypt.compare(password, user.password);
+
+    const isMatch = await comparePassword(password, user.password);
     if (!isMatch) {
       res.status(400).json({ msg: "Email ou mot de passe incorrect." });
       return;
     }
-    const payload = {
-      id: user._id,
-      role: user.role || 1,
-    };
-    const token = jwt.sign(payload, process.env.JWT_SECRET || "secret", {
-      expiresIn: "1h", // Le jeton expire après 1 heure
+
+    // Generate tokens
+    const { accessToken, refreshToken } = generateTokens(user._id.toString(), user.role);
+
+    // Set cookies
+    res.cookie('accessToken', accessToken, generateCookieOptions(new Date(Date.now() + 15 * 60 * 1000))); // 15 minutes
+    res.cookie('refreshToken', refreshToken, generateCookieOptions(new Date(Date.now() + 2 * 60 * 60 * 1000))); // 2 hours
+
+    res.status(200).json({ 
+      msg: "Connexion réussie",
+      userId: user._id 
     });
-    res.status(200).json({ token, userId: user._id });
   } catch (error) {
-    console.error(error);
+    console.error('Login error:', error);
     res.status(500).json({ msg: "Erreur interne du serveur." });
   }
 };
 
-// Register Controller
-/**
- * @swagger
- * /register:
- *   post:
- *     summary: Enregistrement d'un nouvel utilisateur
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               email:
- *                 type: string
- *               password:
- *                 type: string
- *               isAdmin:
- *                 type: boolean
- *     responses:
- *       201:
- *         description: Utilisateur créé avec succès
- *       400:
- *         description: Cet email est déjà utilisé
- *       500:
- *         description: Erreur interne du serveur
- */
 const register = async (req: Request, res: Response): Promise<void> => {
   const { email, password, isAdmin } = req.body;
 
   try {
-    // Vérifier si l'utilisateur existe déjà
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       res.status(400).json({ msg: "Cet email est déjà utilisé." });
       return;
     }
 
-    // Hacher le mot de passe
     const hashedPassword = await hashPassword(password);
-
-    // Créer un nouvel utilisateur
     const newUser = new User({
       email,
       password: hashedPassword,
-      role: isAdmin ? true : false, // Si isAdmin est true, créer un admin
+      role: isAdmin ? true : false,
     });
 
-    console.log("saving user", newUser);
     await newUser.save();
 
-    // Récupérer l'utilisateur nouvellement créé pour obtenir l'ID
-    const user = await User.findOne({ email });
+    // Generate tokens
+    const { accessToken, refreshToken } = generateTokens(newUser._id.toString(), newUser.role);
 
-    // Créer le token
-    console.log("creating token");
-    if (!user) {
-      res
-        .status(500)
-        .json({ msg: "Erreur lors de la récupération de l'utilisateur." });
-      return;
-    }
-    const payload = {
-      id: user._id,
-      role: user.role,
-    };
-    const token = jwt.sign(payload, process.env.JWT_SECRET || "secret", {
-      expiresIn: "1h", // Le jeton expire après 1 heure
+    // Set cookies
+    res.cookie('accessToken', accessToken, generateCookieOptions(new Date(Date.now() + 15 * 60 * 1000))); // 15 minutes
+    res.cookie('refreshToken', refreshToken, generateCookieOptions(new Date(Date.now() + 2 * 60 * 60 * 1000))); // 2 hours
+
+    res.status(201).json({
+      msg: "Utilisateur créé avec succès",
+      userId: newUser._id
     });
-    console.log("token created", token);
-
-    res
-      .status(200)
-      .json({ msg: "Utilisateur créé avec succès.", token, userId: user._id });
   } catch (error) {
-    console.error(error);
+    console.error('Register error:', error);
     res.status(500).json({ msg: "Erreur interne du serveur." });
   }
 };
 
-// Delete Controller
-/**
- * @swagger
- * /delete:
- *   post:
- *     summary: Suppression d'un utilisateur
- *     tags: [User]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               _id:
- *                 type: string
- *     responses:
- *       200:
- *         description: Utilisateur supprimé avec succès
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 msg:
- *                   type: string
- *                 user:
- *                   type: object
- *                   properties:
- *                     email:
- *                       type: string
- *                     role:
- *                       type: boolean
- *       404:
- *         description: Utilisateur non trouvé
- *       500:
- *         description: Erreur interne du serveur
- */
+const logout = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Clear cookies
+    res.cookie('accessToken', '', { expires: new Date(0) });
+    res.cookie('refreshToken', '', { expires: new Date(0) });
+    
+    res.status(200).json({ msg: "Déconnexion réussie" });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ msg: "Erreur interne du serveur." });
+  }
+};
+
+const refreshToken = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) {
+      res.status(401).json({ msg: "Token de rafraîchissement manquant" });
+      return;
+    }
+
+    const decoded = verifyRefreshToken(refreshToken);
+    if (!decoded) {
+      res.status(401).json({ msg: "Token de rafraîchissement invalide" });
+      return;
+    }
+
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      res.status(401).json({ msg: "Utilisateur non trouvé" });
+      return;
+    }
+
+    // Generate new tokens
+    const tokens = generateTokens(user._id.toString(), user.role);
+
+    // Set new cookies
+    res.cookie('accessToken', tokens.accessToken, generateCookieOptions(new Date(Date.now() + 15 * 60 * 1000)));
+    res.cookie('refreshToken', tokens.refreshToken, generateCookieOptions(new Date(Date.now() + 2 * 60 * 60 * 1000)));
+
+    res.status(200).json({ msg: "Tokens rafraîchis avec succès" });
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    res.status(401).json({ msg: "Token de rafraîchissement invalide" });
+  }
+};
+
 const del = async (req: Request, res: Response): Promise<void> => {
   const { _id } = req.body;
 
@@ -195,25 +129,17 @@ const del = async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    // Étape 1: Récupérer l'utilisateur
-    const user = await User.findOne({ _id: _id as string });
-
-    // Vérifier si l'utilisateur existe
+    const user = await User.findByIdAndDelete(_id);
     if (!user) {
       res.status(404).json({ msg: "Utilisateur non trouvé." });
       return;
     }
 
-    // Étape 2: Supprimer l'utilisateur une fois récupéré
-    await user.deleteOne(); // Utilisation de la méthode 'deleteOne' pour supprimer l'utilisateur récupéré
-
-    // Réponse de succès
     res.status(200).json({ msg: "Utilisateur supprimé avec succès.", user });
   } catch (error) {
-    // Gestion des erreurs
-    console.error(error);
+    console.error('Delete user error:', error);
     res.status(500).json({ msg: "Erreur interne du serveur." });
   }
 };
 
-export default { login, register, del };
+export default { login, register, logout, refreshToken, del };

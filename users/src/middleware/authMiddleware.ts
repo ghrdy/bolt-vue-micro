@@ -1,25 +1,46 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from "jsonwebtoken";
+import { verifyAccessToken, verifyRefreshToken, generateTokens, generateCookieOptions } from '../services/TokenService';
 
 interface AuthRequest extends Request {
-  user?: any; // Ajoutez les propriétés supplémentaires que vous attendez dans votre requête
+  user?: any;
 }
 
-const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction): void => {
-  const token = req.headers['authorization'];
-
-  if (!token) {
-    res.status(401).json({ message: 'Unauthorized' });
-    return;
-  }
-
+const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    // Vérifiez le token et ajoutez l'utilisateur à la requête
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret"); // Assurez-vous que cette fonction existe et fonctionne correctement
-    req.user = decoded ;
+    const accessToken = req.cookies.accessToken;
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!accessToken && !refreshToken) {
+      res.status(401).json({ message: 'Authentication required' });
+      return;
+    }
+
+    // Verify access token
+    const decoded = verifyAccessToken(accessToken);
+    if (decoded) {
+      req.user = decoded;
+      next();
+      return;
+    }
+
+    // If access token is invalid, try refresh token
+    const refreshDecoded = verifyRefreshToken(refreshToken);
+    if (!refreshDecoded) {
+      res.status(401).json({ message: 'Invalid refresh token' });
+      return;
+    }
+
+    // Generate new tokens
+    const tokens = generateTokens(refreshDecoded.id, refreshDecoded.role);
+
+    // Set new cookies
+    res.cookie('accessToken', tokens.accessToken, generateCookieOptions(new Date(Date.now() + 15 * 60 * 1000)));
+    res.cookie('refreshToken', tokens.refreshToken, generateCookieOptions(new Date(Date.now() + 2 * 60 * 60 * 1000)));
+
+    req.user = refreshDecoded;
     next();
   } catch (error) {
-    res.status(401).json({ message: 'Unauthorized' });
+    res.status(401).json({ message: 'Authentication failed' });
   }
 };
 
