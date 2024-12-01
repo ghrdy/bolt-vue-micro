@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import User from "../models/UserModel";
-import { hashPassword } from "../services/UserService";
-import { generateTokens, generateCookieOptions } from "../services/TokenService";
+import { hashPassword, comparePassword } from "../services/UserService";
+import { generateTokens, generateCookieOptions, verifyRefreshToken } from "../services/TokenService";
+import jwt from 'jsonwebtoken';
 
 const login = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
@@ -13,7 +14,7 @@ const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await comparePassword(password, user.password);
     if (!isMatch) {
       res.status(400).json({ msg: "Email ou mot de passe incorrect." });
       return;
@@ -31,7 +32,7 @@ const login = async (req: Request, res: Response): Promise<void> => {
       userId: user._id 
     });
   } catch (error) {
-    console.error(error);
+    console.error('Login error:', error);
     res.status(500).json({ msg: "Erreur interne du serveur." });
   }
 };
@@ -67,7 +68,7 @@ const register = async (req: Request, res: Response): Promise<void> => {
       userId: newUser._id
     });
   } catch (error) {
-    console.error(error);
+    console.error('Register error:', error);
     res.status(500).json({ msg: "Erreur interne du serveur." });
   }
 };
@@ -80,7 +81,7 @@ const logout = async (req: Request, res: Response): Promise<void> => {
     
     res.status(200).json({ msg: "Déconnexion réussie" });
   } catch (error) {
-    console.error(error);
+    console.error('Logout error:', error);
     res.status(500).json({ msg: "Erreur interne du serveur." });
   }
 };
@@ -93,9 +94,13 @@ const refreshToken = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET || 'refresh_secret') as any;
-    const user = await User.findById(decoded.id);
+    const decoded = verifyRefreshToken(refreshToken);
+    if (!decoded) {
+      res.status(401).json({ msg: "Token de rafraîchissement invalide" });
+      return;
+    }
 
+    const user = await User.findById(decoded.id);
     if (!user) {
       res.status(401).json({ msg: "Utilisateur non trouvé" });
       return;
@@ -110,9 +115,31 @@ const refreshToken = async (req: Request, res: Response): Promise<void> => {
 
     res.status(200).json({ msg: "Tokens rafraîchis avec succès" });
   } catch (error) {
-    console.error(error);
+    console.error('Refresh token error:', error);
     res.status(401).json({ msg: "Token de rafraîchissement invalide" });
   }
 };
 
-export default { login, register, logout, refreshToken };
+const del = async (req: Request, res: Response): Promise<void> => {
+  const { _id } = req.body;
+
+  if (!_id) {
+    res.status(400).json({ msg: "ID de l'utilisateur requis." });
+    return;
+  }
+
+  try {
+    const user = await User.findByIdAndDelete(_id);
+    if (!user) {
+      res.status(404).json({ msg: "Utilisateur non trouvé." });
+      return;
+    }
+
+    res.status(200).json({ msg: "Utilisateur supprimé avec succès.", user });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ msg: "Erreur interne du serveur." });
+  }
+};
+
+export default { login, register, logout, refreshToken, del };
