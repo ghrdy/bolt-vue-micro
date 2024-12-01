@@ -1,8 +1,0 @@
-### Delete User
-POST http://localhost:3001/users/delete
-Content-Type: application/json
-Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3MmM5M2EwNDMwNTI3NmMwOWIzOWUyOSIsInJvbGUiOnRydWUsImlhdCI6MTczMDk3NDcwNCwiZXhwIjoxNzMwOTc4MzA0fQ.dikJ35vmodbEshbOL7SMgUWu3d7nv3ZJfRVL2pz7qq4
-
-{
-  "_id": "672c93a04305276c09b39e29"
-}

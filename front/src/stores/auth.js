@@ -4,51 +4,54 @@ import { useCartStore } from './cart'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    token: localStorage.getItem('token') || null,
-    userId: localStorage.getItem('userId') || null
+    userId: localStorage.getItem('userId') || null,
+    isAuthenticated: false
   }),
-
-  getters: {
-    isAuthenticated: (state) => !!state.token
-  },
 
   actions: {
     async login(credentials) {
       try {
-        const response = await api.post('/users/login', credentials)
-        this.setAuth(response.data)
-        return response
+        const response = await api.post('/users/login', credentials, {
+          withCredentials: true // Important pour les cookies
+        });
+        this.setAuth(response.data);
+        return response;
       } catch (error) {
-        throw error
+        throw error;
       }
     },
 
     async register(userData) {
       try {
-        const response = await api.post('/users/register', userData)
-        this.setAuth(response.data)
-        return response
+        const response = await api.post('/users/register', userData, {
+          withCredentials: true
+        });
+        this.setAuth(response.data);
+        return response;
       } catch (error) {
-        throw error
+        throw error;
       }
     },
 
     setAuth(data) {
-      this.token = data.token
-      this.userId = data.userId
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('userId', data.userId)
-      api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
+      this.userId = data.userId;
+      this.isAuthenticated = true;
+      localStorage.setItem('userId', data.userId);
     },
 
-    logout() {
-      this.token = null
-      this.userId = null
-      localStorage.removeItem('token')
-      localStorage.removeItem('userId')
-      delete api.defaults.headers.common['Authorization']
-      const cartStore = useCartStore()
-      cartStore.clearCart()
+    async logout() {
+      try {
+        await api.post('/users/logout', {}, {
+          withCredentials: true
+        });
+        this.userId = null;
+        this.isAuthenticated = false;
+        localStorage.removeItem('userId');
+        const cartStore = useCartStore();
+        cartStore.clearCart();
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
     }
   }
-})
+});
